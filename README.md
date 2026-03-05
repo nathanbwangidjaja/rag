@@ -35,7 +35,8 @@ app/
 ├── config.py                # env vars, model names, chunking params
 ├── ingestion/
 │   ├── pdf_parser.py        # extract text from PDFs page-by-page (PyMuPDF)
-│   └── chunker.py           # split text into overlapping chunks for embedding
+│   ├── chunker.py           # split text into overlapping chunks for embedding
+│   └── routes.py            # POST /ingest endpoint
 └── search/
     ├── embeddings.py        # calls Mistral embed API, handles batching
     └── vector_store.py      # in-memory numpy vector store, persists to disk
@@ -51,9 +52,10 @@ app/
 
 **Vector store** — `vector_store.py` is a bare-bones numpy store. Vectors live in memory as a single matrix; search is brute-force cosine similarity. Good enough for thousands of chunks. Saves to `data/vectors.npy` + `data/metadata.json` so nothing is lost on restart.
 
+**Ingestion endpoint** — `POST /ingest` accepts one or more PDF uploads. Each file gets parsed, chunked, embedded via Mistral, and stored. Non-PDFs are skipped, and you get back per-file stats (pages found, chunks created).
+
 ### Still to do
 
-- Ingestion endpoint (upload PDFs, parse, chunk, embed, store)
 - Intent detection + query rewriting
 - BM25 keyword search alongside semantic search
 - Result merging (reciprocal rank fusion) and re-ranking

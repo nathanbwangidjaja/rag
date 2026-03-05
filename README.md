@@ -26,3 +26,38 @@ Server runs at `http://localhost:8000`.
 | [httpx](https://www.python-httpx.org/) | HTTP client for Mistral API calls |
 | [Mistral AI](https://docs.mistral.ai/) | Embeddings (`mistral-embed`) and generation (`mistral-small-latest`) |
 | [uvicorn](https://www.uvicorn.org/) | ASGI server |
+
+## Project Structure
+
+```
+app/
+├── main.py                  # FastAPI app entry point
+├── config.py                # env vars, model names, chunking params
+├── ingestion/
+│   ├── pdf_parser.py        # extract text from PDFs page-by-page (PyMuPDF)
+│   └── chunker.py           # split text into overlapping chunks for embedding
+└── search/
+    ├── embeddings.py        # calls Mistral embed API, handles batching
+    └── vector_store.py      # in-memory numpy vector store, persists to disk
+```
+
+### What's wired up so far
+
+**PDF parsing** — `pdf_parser.py` pulls text out per page and strips repeated headers/footers (lines that show up on 60%+ of pages are almost always noise). No OCR support yet, so scanned PDFs won't work.
+
+**Chunking** — `chunker.py` splits on sentence boundaries instead of fixed character counts. Chunks target ~512 chars with 64-char overlap so we don't lose context at the edges. Each chunk tracks which file and page it came from.
+
+**Embeddings** — `embeddings.py` wraps the Mistral embed endpoint. Batches up to 16 texts per call with a short pause between batches to stay under rate limits.
+
+**Vector store** — `vector_store.py` is a bare-bones numpy store. Vectors live in memory as a single matrix; search is brute-force cosine similarity. Good enough for thousands of chunks. Saves to `data/vectors.npy` + `data/metadata.json` so nothing is lost on restart.
+
+### Still to do
+
+- Ingestion endpoint (upload PDFs, parse, chunk, embed, store)
+- Intent detection + query rewriting
+- BM25 keyword search alongside semantic search
+- Result merging (reciprocal rank fusion) and re-ranking
+- LLM generation with prompt templates
+- Guardrails: citation thresholds, hallucination checks, PII refusal
+- Chat UI
+- Stretch Goal: GraphRAG!

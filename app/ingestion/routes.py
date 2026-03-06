@@ -6,6 +6,7 @@ from app.ingestion.pdf_parser import parse_pdf
 from app.ingestion.chunker import chunk_pages
 from app.search.embeddings import get_embeddings
 from app.search.vector_store import store
+from app.search.bm25 import bm25_index
 
 router = APIRouter()
 
@@ -50,6 +51,9 @@ async def ingest_pdfs(files: list[UploadFile] = File(...)):
             })
         except Exception as e:
             results.append({"file": f.filename, "status": "error", "reason": str(e)})
+
+    # rebuild keyword index with all chunks so far
+    bm25_index.build(store.chunks)
 
     return {
         "ingested": results,

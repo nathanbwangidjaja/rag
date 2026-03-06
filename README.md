@@ -37,9 +37,13 @@ app/
 │   ├── pdf_parser.py        # extract text from PDFs page-by-page (PyMuPDF)
 │   ├── chunker.py           # split text into overlapping chunks for embedding
 │   └── routes.py            # POST /ingest endpoint
+├── query/
+│   ├── intent.py            # classifies what the user is actually asking for
+│   └── transform.py         # rewrites vague queries into better search terms
 └── search/
     ├── embeddings.py        # calls Mistral embed API, handles batching
-    └── vector_store.py      # in-memory numpy vector store, persists to disk
+    ├── vector_store.py      # in-memory numpy vector store, persists to disk
+    └── bm25.py              # keyword search, built from scratch
 ```
 
 ### What's wired up so far
@@ -54,10 +58,14 @@ app/
 
 **Ingestion endpoint** — `POST /ingest` accepts one or more PDF uploads. Each file gets parsed, chunked, embedded via Mistral, and stored. Non-PDFs are skipped, and you get back per-file stats (pages found, chunks created).
 
+**Intent detection** — before we hit the knowledge base, `intent.py` asks Mistral to figure out what the user actually wants. Greetings and small talk skip retrieval entirely. Queries asking for legal/medical advice or containing PII get refused. Everything else gets routed to the right prompt template (factual, list, summary).
+
+**Query rewriting** — `transform.py` takes vague questions and rewrites them so they embed better. Something like "what does it say about that?" on its own is useless for search, so we expand it into something more specific before embedding.
+
+**BM25 keyword search** - `bm25.py` is a from-scratch implementation. Tokenizes, removes stopwords, scores with TF-IDF and length normalization. No stemming for now (so "cats" won't match "cat"), but it catches things embeddings tend to miss - exact names, acronyms, numbers. The index rebuilds after every ingest call.
+
 ### Still to do
 
-- Intent detection + query rewriting
-- BM25 keyword search alongside semantic search
 - Result merging (reciprocal rank fusion) and re-ranking
 - LLM generation with prompt templates
 - Guardrails: citation thresholds, hallucination checks, PII refusal

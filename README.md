@@ -42,3 +42,5 @@ app/
 - Vector store: numpy matrix, cosine similarity, persists to data/
 - BM25: custom impl, no stemming. Rebuilds on each ingest.
 - Ranker: RRF fuses semantic + keyword lists, dedupes overlap, filters by similarity threshold.
+- Guardrails: PII regex catches SSNs/credit cards before anything runs. Hallucination filter asks the LLM to check its own answer against the source chunks post-generation — sentences it can't back up get flagged. Not bulletproof but catches the obvious stuff.
+- Intent routing picks different prompt templates (factual, list, summary) and skips RAG entirely for greetings or refused queries (legal/medical/PII).

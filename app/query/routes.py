@@ -11,6 +11,7 @@ from app.generation.prompts import (
     build_prompt, CASUAL_RESPONSES, REFUSE_TEMPLATE,
     REFUSE_REASONS, INSUFFICIENT_EVIDENCE,
 )
+from app.generation.filters import check_pii, check_hallucinations
 from app.config import TOP_K
 
 router = APIRouter()
@@ -25,16 +26,23 @@ class QueryResponse(BaseModel):
     intent: str
     sources: list[dict] = []
     transformed_query: str | None = None
+    hallucination_check: dict | None = None
 
 
 @router.post("/query", response_model=QueryResponse)
 async def query(req: QueryRequest):
     question = req.question.strip()
 
-    # step 1: figure out what they're asking
+    pii_type = check_pii(question)
+    if pii_type:
+        return QueryResponse(
+            answer=f"Detected {pii_type} in your message. Remove it and try again.",
+            intent="refuse",
+        )
+
     intent = await detect_intent(question)
 
-    # casual messages — no retrieval needed
+    # casual — skip retrieval
     if intent == "casual":
         q_lower = question.lower()
         if any(w in q_lower for w in ["hi", "hello", "hey", "sup"]):
@@ -45,7 +53,7 @@ async def query(req: QueryRequest):
             msg = CASUAL_RESPONSES["default"]
         return QueryResponse(answer=msg, intent=intent)
 
-    # refused queries — PII, legal, medical
+    # refuse
     if intent == "refuse":
         q_lower = question.lower()
         if any(w in q_lower for w in ["ssn", "social security", "credit card"]):
@@ -61,18 +69,13 @@ async def query(req: QueryRequest):
             intent=intent,
         )
 
-    # step 2: rewrite the query for better retrieval
     transformed = await transform_query(question)
 
-    # step 3: run both searches
     query_embedding = await get_single_embedding(transformed)
     semantic_results = store.search(query_embedding, top_k=TOP_K * 2)
     keyword_results = bm25_index.search(transformed, top_k=TOP_K * 2)
-
-    # step 4: merge and rank
     ranked = merge_and_rank(semantic_results, keyword_results, top_k=TOP_K)
 
-    # nothing good enough? say so
     if not ranked:
         return QueryResponse(
             answer=INSUFFICIENT_EVIDENCE,
@@ -80,11 +83,11 @@ async def query(req: QueryRequest):
             transformed_query=transformed,
         )
 
-    # step 5: build prompt and generate
     messages = build_prompt(intent, question, ranked)
     answer = await chat(messages)
 
-    # collect sources for the response
+    hal_result = await check_hallucinations(answer, ranked)
+
     sources = []
     seen = set()
     for chunk in ranked:
@@ -94,8 +97,12 @@ async def query(req: QueryRequest):
             seen.add(key)
 
     return QueryResponse(
-        answer=answer,
+        answer=hal_result["clean_answer"],
         intent=intent,
         sources=sources,
         transformed_query=transformed,
+        hallucination_check={
+            "passed": hal_result["passed"],
+            "flagged": hal_result["flagged_sentences"],
+        },
     )

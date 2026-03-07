@@ -17,8 +17,15 @@ uvicorn app.main:app --reload
 
 ## Stack
 
-- FastAPI, PyMuPDF, NumPy, httpx, Mistral (embed + chat), uvicorn
-- Frontend: vanilla JS, Tailwind (CDN), no framework
+- [FastAPI](https://fastapi.tiangolo.com/) — API framework
+- [PyMuPDF](https://pymupdf.readthedocs.io/) — PDF text extraction
+- [NumPy](https://numpy.org/) — vector math + cosine similarity
+- [httpx](https://www.python-httpx.org/) — async HTTP client for Mistral API
+- [Mistral AI](https://docs.mistral.ai/) — embeddings (`mistral-embed`) + chat (`mistral-small-latest`)
+- [uvicorn](https://www.uvicorn.org/) — ASGI server
+- [Tailwind CSS](https://tailwindcss.com/) (CDN) — UI styling
+- [Cursor](https://www.cursor.com/) — editor / dev environment
+- [Google Stitch](https://stitch.withgoogle.com/) — UI layout prototyping
 
 ## Layout
 

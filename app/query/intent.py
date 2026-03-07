@@ -18,7 +18,6 @@ VALID_INTENTS = {"knowledge", "list", "summary", "casual", "refuse"}
 
 
 async def detect_intent(query: str) -> str:
-    """Ask the LLM to classify the query intent."""
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
         "Content-Type": "application/json",

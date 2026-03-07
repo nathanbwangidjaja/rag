@@ -6,10 +6,6 @@ BATCH_SIZE = 16  # mistral endpoint handles up to 16 inputs per call
 
 
 async def get_embeddings(texts: list[str]) -> list[list[float]]:
-    """
-    Get embeddings from Mistral for a list of texts.
-    Splits into batches to respect API limits.
-    """
     all_embeddings = []
 
     for i in range(0, len(texts), BATCH_SIZE):
@@ -24,7 +20,6 @@ async def get_embeddings(texts: list[str]) -> list[list[float]]:
 
 
 async def get_single_embedding(text: str) -> list[float]:
-    """Embed a single piece of text. Convenience wrapper."""
     result = await _embed_batch([text])
     return result[0]
 

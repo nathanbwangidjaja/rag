@@ -1,22 +1,9 @@
-"""
-Text chunking for RAG ingestion.
-
-Design considerations:
-- We chunk at the sentence level rather than blindly splitting at N characters.
-  This avoids cutting mid-sentence which would hurt both embedding quality and
-  readability when showing retrieved context to the user.
-- Overlap between chunks helps ensure we don't lose context at boundaries.
-  A query that matches a concept spanning two chunks will still find a hit.
-- We try to keep chunks roughly uniform in size. Very short chunks (< 100 chars)
-  tend to produce poor embeddings, so we merge them with neighbors.
-- Each chunk carries metadata (source file, page number) for citations.
-"""
+"""Chunk text at sentence boundaries for embedding."""
 
 import re
 
 
 def split_sentences(text: str) -> list[str]:
-    """Split text into sentences. Simple regex-based approach."""
     # split on period/question/exclamation followed by space or newline
     parts = re.split(r'(?<=[.!?])\s+', text)
     # also split on double newlines (paragraph breaks)
@@ -32,10 +19,6 @@ def split_sentences(text: str) -> list[str]:
 
 
 def chunk_text(text: str, max_chars=512, overlap=64) -> list[str]:
-    """
-    Group sentences into chunks up to max_chars, with overlap.
-    Overlap is done by carrying the last few sentences from the previous chunk.
-    """
     sentences = split_sentences(text)
     if not sentences:
         return []
@@ -82,10 +65,6 @@ def chunk_text(text: str, max_chars=512, overlap=64) -> list[str]:
 
 
 def chunk_pages(pages: list[dict], source: str, max_chars=512, overlap=64) -> list[dict]:
-    """
-    Chunk a list of page dicts into retrieval-ready chunks with metadata.
-    Each chunk gets: text, source filename, page number, chunk index.
-    """
     all_chunks = []
     idx = 0
 

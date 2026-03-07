@@ -1,13 +1,8 @@
 import httpx
 from app.config import MISTRAL_API_KEY, MISTRAL_BASE_URL, CHAT_MODEL
 
-REWRITE_PROMPT = """You are a search query optimizer. Rewrite the user's question into a better search query for finding relevant passages in a document collection.
-
-Rules:
-- Expand abbreviations and vague references
-- Add relevant keywords that would appear in source documents
-- Keep it concise, under 2 sentences
-- Output ONLY the rewritten query, nothing else
+REWRITE_PROMPT = """Rewrite this question into a better search query for document retrieval.
+Expand abbreviations, add keywords that'd show up in the docs. Keep it short. Output only the rewritten query.
 
 User question: {query}
 
@@ -15,10 +10,6 @@ Rewritten query:"""
 
 
 async def transform_query(query: str) -> str:
-    """
-    Rewrite the user's raw question into something that embeds better.
-    Vague stuff like "what does it say about that?" becomes more specific.
-    """
     headers = {
         "Authorization": f"Bearer {MISTRAL_API_KEY}",
         "Content-Type": "application/json",

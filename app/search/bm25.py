@@ -26,11 +26,7 @@ def tokenize(text: str) -> list[str]:
 
 
 class BM25Index:
-    """
-    BM25 ranking built from scratch.
-    Feed it a list of documents (chunk dicts with 'text' and 'id'),
-    then query to get ranked results.
-    """
+    """Chunk dicts with text + id. build() then search()."""
 
     def __init__(self):
         self.docs: list[dict] = []
@@ -40,7 +36,6 @@ class BM25Index:
         self.n_docs: int = 0
 
     def build(self, chunks: list[dict]):
-        """Index a list of chunk dicts. Call this after ingestion."""
         self.docs = chunks
         self.doc_tokens = []
         self.doc_freqs = {}
@@ -61,7 +56,6 @@ class BM25Index:
         self.avg_dl = total_len / self.n_docs if self.n_docs > 0 else 1.0
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:
-        """Score all docs against the query, return top_k."""
         if self.n_docs == 0:
             return []
 
@@ -86,7 +80,6 @@ class BM25Index:
         return results
 
     def _score_doc(self, doc_idx: int, query_tokens: list[str]) -> float:
-        """BM25 score for a single document against query tokens."""
         doc_toks = self.doc_tokens[doc_idx]
         dl = len(doc_toks)
         tf_map = Counter(doc_toks)

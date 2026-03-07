@@ -1,21 +1,10 @@
-"""
-PDF text extraction using PyMuPDF.
-
-Considerations:
-- PyMuPDF handles most PDF layouts well, including multi-column and embedded fonts.
-- We extract per-page to preserve document structure and enable page-level citations.
-- Some PDFs have text baked into images (scanned docs) -- we don't handle OCR here
-  but that would be a natural extension (e.g. pytesseract).
-- Headers/footers often repeat across pages. We do a simple heuristic to strip
-  lines that appear on most pages, since they add noise to retrieval.
-"""
+"""PDF text extraction. Per-page, strips repeated headers/footers."""
 
 import fitz  # pymupdf
 from collections import Counter
 
 
 def extract_pages(pdf_path: str) -> list[dict]:
-    """Pull text out of each page. Returns list of {page, text}."""
     doc = fitz.open(pdf_path)
     pages = []
     for i, page in enumerate(doc):
@@ -27,7 +16,6 @@ def extract_pages(pdf_path: str) -> list[dict]:
 
 
 def _find_repeated_lines(pages: list[dict], threshold=0.6) -> set[str]:
-    """Find lines that show up on most pages -- likely headers/footers."""
     if len(pages) < 3:
         return set()
 
@@ -44,7 +32,6 @@ def _find_repeated_lines(pages: list[dict], threshold=0.6) -> set[str]:
 
 
 def clean_pages(pages: list[dict]) -> list[dict]:
-    """Remove repeated headers/footers and normalize whitespace."""
     repeated = _find_repeated_lines(pages)
 
     cleaned = []
@@ -62,6 +49,5 @@ def clean_pages(pages: list[dict]) -> list[dict]:
 
 
 def parse_pdf(pdf_path: str) -> list[dict]:
-    """Main entry: extract + clean pages from a PDF."""
     pages = extract_pages(pdf_path)
     return clean_pages(pages)

@@ -9,11 +9,7 @@ STORE_META_FILE = os.path.join(DATA_DIR, "metadata.json")
 
 
 class VectorStore:
-    """
-    In-memory vector store backed by numpy.
-    No external DB -just a matrix of vectors and a list of metadata dicts.
-    Persists to disk as .npy + .json so we survive restarts.
-    """
+    """Numpy-backed in-memory store. Saves to .npy + .json on disk."""
 
     def __init__(self):
         self.vectors: np.ndarray | None = None  # shape: (n, dim)
@@ -33,10 +29,7 @@ class VectorStore:
         self._save()
 
     def search(self, query_embedding: list[float], top_k: int = 5) -> list[dict]:
-        """
-        Find the top k most similar chunks to the query vector.
-        Returns list of dicts with chunk metadata + similarity score.
-        """
+        """Top-k cosine similarity search."""
         if self.vectors is None or len(self.chunks) == 0:
             return []
 

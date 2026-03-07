@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DocStack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: { "primary": "#2463eb" },
+            fontFamily: { "display": ["Inter", "sans-serif"] },
+        },
+    },
+}
+</script>
+<style>
+body { font-family: 'Inter', sans-serif; }
+.glass-panel {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+.liquid-gradient { background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); }
+.message-shadow { box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+</style>
+</head>
+<body class="bg-[#fdfdfe] text-slate-900 font-display">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+
+<!-- Header -->
+<header class="z-50 flex items-center justify-between px-8 py-4 glass-panel border-b border-slate-200/50">
+    <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-2xl">auto_awesome_motion</span>
+        </div>
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">DocStack</h1>
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-primary/80">RAG Pipeline</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 border border-slate-200">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span id="status-text" class="text-xs font-medium text-slate-600">Ready</span>
+        </div>
+        <div id="chunk-count" class="hidden md:flex items-center gap-1 text-xs font-medium text-slate-500">
+            <span class="material-symbols-outlined text-sm">database</span>
+            <span id="chunk-count-text">0 chunks</span>
+        </div>
+    </div>
+</header>
+
+<main class="relative flex flex-1 flex-col overflow-hidden liquid-gradient">
+
+    <!-- Upload Area -->
+    <div class="px-6 py-4">
+        <div class="mx-auto max-w-4xl">
+            <div id="upload-area" class="glass-panel flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/60 p-4 shadow-xl shadow-slate-200/40">
+                <div id="upload-info" class="flex items-center gap-4">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-white shadow-sm border border-slate-100">
+                        <span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                    </div>
+                    <div>
+                        <h3 id="upload-filename" class="text-sm font-bold text-slate-800">No documents uploaded</h3>
+                        <p id="upload-details" class="text-xs font-medium text-slate-500">Upload PDFs to get started</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-2 text-sm font-semibold text-primary hover:text-blue-700 transition-colors px-3 py-2 rounded-lg hover:bg-primary/5 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">upload_file</span>
+                        Upload PDFs
+                        <input id="file-input" type="file" accept=".pdf" multiple class="hidden"/>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat History -->
+    <div id="chat-scroll" class="flex-1 overflow-y-auto px-6 py-4">
+        <div id="chat-messages" class="mx-auto flex max-w-3xl flex-col gap-8 pb-32">
+            <!-- welcome message -->
+            <div class="flex gap-4">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-slate-100 mt-1">
+                    <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+                </div>
+                <div class="flex flex-col gap-3 max-w-[85%]">
+                    <div class="message-shadow rounded-2xl rounded-tl-none bg-white p-6 text-slate-800 leading-relaxed border border-slate-100/50">
+                        <p>Upload some PDFs and ask me anything about them. I'll search through the content and give you answers with citations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
+        <div class="mx-auto max-w-3xl pointer-events-auto">
+            <div class="glass-panel flex items-end gap-3 rounded-2xl border border-white p-3 shadow-2xl shadow-slate-300/60">
+                <div class="flex-1">
+                    <textarea id="query-input" class="w-full resize-none border-none bg-transparent p-3 text-slate-800 placeholder:text-slate-400 focus:ring-0 text-sm leading-relaxed" placeholder="Ask anything about the document..." rows="1"></textarea>
+                </div>
+                <div class="flex items-center gap-2 pb-1.5 pr-1.5">
+                    <label class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:text-primary transition-colors hover:bg-primary/5 cursor-pointer">
+                        <span class="material-symbols-outlined">attach_file</span>
+                        <input id="attach-input" type="file" accept=".pdf" multiple class="hidden"/>
+                    </label>
+                    <button id="send-btn" class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95">
+                        <span class="material-symbols-outlined text-xl">send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

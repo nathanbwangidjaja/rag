@@ -33,6 +33,12 @@ class QueryResponse(BaseModel):
 async def query(req: QueryRequest):
     question = req.question.strip()
 
+    if not question:
+        return QueryResponse(
+            answer="Please enter a question.",
+            intent="casual",
+        )
+
     pii_type = check_pii(question)
     if pii_type:
         return QueryResponse(

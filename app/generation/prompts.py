@@ -10,7 +10,7 @@ def _format_context(chunks: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-KNOWLEDGE_TEMPLATE = """Answer the user's question using ONLY the context below. If the context doesn't contain enough information, say so — don't make things up.
+KNOWLEDGE_TEMPLATE = """Answer the user's question using ONLY the context below. If the context doesn't contain enough information, say so. Don't make things up.
 
 Cite your sources inline like [Source: filename.pdf, p.X] when you reference specific information.
 
@@ -68,16 +68,32 @@ REFUSE_REASONS = {
 INSUFFICIENT_EVIDENCE = "I couldn't find enough relevant information in the uploaded documents to answer that. Try rephrasing your question, or make sure the right files have been ingested."
 
 
-def build_prompt(intent: str, question: str, chunks: list[dict]) -> list[dict]:
+def _format_graph_context(relationships: list[dict]) -> str:
+    lines = []
+    for rel in relationships:
+        lines.append(f"- {rel['source']} --[{rel['label']}]--> {rel['target']}")
+    return "\n".join(lines)
+
+
+def build_prompt(
+    intent: str,
+    question: str,
+    chunks: list[dict],
+    graph_context: list[dict] | None = None,
+) -> list[dict]:
 
     if intent == "casual":
-        # no RAG needed, just respond directly
         return None
 
     if intent == "refuse":
         return None
 
     context = _format_context(chunks)
+
+    # inject graph relationship context when available
+    if graph_context:
+        rel_text = _format_graph_context(graph_context)
+        context += f"\n\nEntity Relationships (from knowledge graph):\n{rel_text}"
 
     if intent == "list":
         template = LIST_TEMPLATE

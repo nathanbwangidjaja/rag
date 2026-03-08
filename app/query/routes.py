@@ -12,6 +12,9 @@ from app.generation.prompts import (
     REFUSE_REASONS, INSUFFICIENT_EVIDENCE,
 )
 from app.generation.filters import check_pii, check_hallucinations
+from app.graph.query_detect import should_use_graph
+from app.graph.search import graph_search
+from app.graph.knowledge_graph import graph
 from app.config import TOP_K
 
 router = APIRouter()
@@ -80,7 +83,17 @@ async def query(req: QueryRequest):
     query_embedding = await get_single_embedding(transformed)
     semantic_results = store.search(query_embedding, top_k=TOP_K * 2)
     keyword_results = bm25_index.search(transformed, top_k=TOP_K * 2)
-    ranked = merge_and_rank(semantic_results, keyword_results, top_k=TOP_K)
+
+    # graph-aware retrieval — adds a third signal to RRF when entities are found
+    use_graph, matched_entities = should_use_graph(transformed, graph)
+    gr = graph_search(matched_entities, graph, store) if use_graph else []
+    graph_context = graph.get_relationships_for_entities(matched_entities) if use_graph else None
+
+    ranked = merge_and_rank(
+        semantic_results, keyword_results,
+        graph_results=gr if gr else None,
+        top_k=TOP_K,
+    )
 
     if not ranked:
         return QueryResponse(
@@ -89,7 +102,7 @@ async def query(req: QueryRequest):
             transformed_query=transformed,
         )
 
-    messages = build_prompt(intent, question, ranked)
+    messages = build_prompt(intent, question, ranked, graph_context=graph_context)
     answer = await chat(messages)
 
     hal_result = await check_hallucinations(answer, ranked)

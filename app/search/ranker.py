@@ -5,27 +5,18 @@ from app.config import SIMILARITY_THRESHOLD
 RRF_K = 60
 
 
-def reciprocal_rank_fusion(
-    semantic_results: list[dict],
-    keyword_results: list[dict],
-) -> list[dict]:
-    """Fuse two ranked lists. Score = sum of 1/(k + rank) for each list."""
+def reciprocal_rank_fusion(*result_lists: list[dict]) -> list[dict]:
+    """Fuse N ranked lists. Score = sum of 1/(k + rank) for each list."""
     scores: dict[str, float] = {}
     chunk_map: dict[str, dict] = {}
 
-    for rank, chunk in enumerate(semantic_results):
-        cid = chunk["id"]
-        scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + rank + 1)
-        if cid not in chunk_map:
-            chunk_map[cid] = chunk
+    for result_list in result_lists:
+        for rank, chunk in enumerate(result_list):
+            cid = chunk["id"]
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + rank + 1)
+            if cid not in chunk_map:
+                chunk_map[cid] = chunk
 
-    for rank, chunk in enumerate(keyword_results):
-        cid = chunk["id"]
-        scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + rank + 1)
-        if cid not in chunk_map:
-            chunk_map[cid] = chunk
-
-    # sort by fused score
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
     results = []
@@ -84,10 +75,14 @@ def filter_by_threshold(results: list[dict], threshold=None) -> list[dict]:
 def merge_and_rank(
     semantic_results: list[dict],
     keyword_results: list[dict],
+    graph_results: list[dict] | None = None,
     top_k: int = 5,
 ) -> list[dict]:
     """Fuse, dedupe, filter, trim to top_k."""
-    fused = reciprocal_rank_fusion(semantic_results, keyword_results)
+    lists = [semantic_results, keyword_results]
+    if graph_results:
+        lists.append(graph_results)
+    fused = reciprocal_rank_fusion(*lists)
     deduped = deduplicate(fused)
     filtered = filter_by_threshold(deduped)
     return filtered[:top_k]

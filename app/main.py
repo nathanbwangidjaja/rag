@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from app.ingestion.routes import router as ingestion_router
 from app.query.routes import router as query_router
 from app.graph.routes import router as graph_router
@@ -23,6 +23,11 @@ def serve_ui():
 @app.get("/graph-ui")
 def serve_graph_ui():
     return FileResponse(os.path.join(STATIC_DIR, "graph.html"))
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
 
 
 @app.get("/health")

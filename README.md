@@ -2,6 +2,8 @@
 
 Chat with your PDFs. FastAPI + Mistral, no LangChain or Pinecone.
 
+**[Demo video](https://www.loom.com/share/09a971a64b8e4e29ac6526a49d8ed1cd)**
+
 ## Run
 
 ```bash
